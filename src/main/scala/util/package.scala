@@ -1,3 +1,4 @@
+package util
 import scala.util.matching.Regex
 import scala.collection.mutable.Stack
 import scala.io.Source
@@ -43,9 +44,9 @@ package object util {
     }
   }
   
-  def parseTrainingData(inputFile: String) : Iterator[TreeNode] = {
+  def parseTrainingData(inputFile: String) : List[TreeNode] = {
     val lines = Source.fromFile(inputFile).getLines()
-    lines map buildParseTree
+    (lines map buildParseTree).toList
   }
   
   def outputModifiedTrainingData(inputFile: String, outputFile: String) : Unit = {
@@ -59,7 +60,7 @@ package object util {
     root match {
       case Terminal(term) => {
         val count = wordCounts.getOrElse(term, 0)
-        if (count >= 5) term else "_RARE_"
+        if (count >= 5) term else "\"_RARE_\""
       }
       case Derivation(nt, children) => {
         val childStruts = (children.map(jsonify)).mkString(", ")
@@ -126,6 +127,8 @@ object Main {
   
   def main(args : Array[String]) : Unit = {
     util.outputModifiedTrainingData(args(0), args(1))
+
+    println("done!")
   }
 }
   
