@@ -5,10 +5,8 @@ import scala.io.Source
 import java.io.PrintWriter
 import java.io.File
 
-package object util {
+object Preprocess {
   sealed trait TreeNode
-  //case class BinaryRule(nonTerminal: String, left: TreeNode, right: TreeNode) extends TreeNode
-  //case class UnaryRule(nonTerminal: String, terminal: String) extends TreeNode
   case class Derivation(nonTerminal: String, children: List[TreeNode]) extends TreeNode
   case class Terminal(terminal: String) extends TreeNode
 
@@ -50,23 +48,30 @@ package object util {
   }
   
   def outputModifiedTrainingData(inputFile: String, outputFile: String) : Unit = {
-    val structs = parseTrainingData(inputFile) map jsonify 
-    val writer = new PrintWriter(new File(outputFile))
-    writer.write(structs.mkString("\n"))
-    writer.close()
+    val structs = parseTrainingData(inputFile) map jsonify(true)
+    writeResults(structs.toIterator, outputFile)
   }
   
-  def jsonify(root: TreeNode): String = {
+  def jsonify(preProcessing: Boolean)(root: TreeNode): String = {
     root match {
       case Terminal(term) => {
-        val count = wordCounts.getOrElse(term, 0)
-        if (count >= 5) term else "\"_RARE_\""
+        if (!preProcessing) term
+        else {
+          val count = wordCounts.getOrElse(term, 0)
+          if (count >= 5) term else "\"_RARE_\""
+        }
       }
       case Derivation(nt, children) => {
-        val childStruts = (children.map(jsonify)).mkString(", ")
+        val childStruts = (children.map(jsonify(preProcessing))).mkString(", ")
         s"[$nt, $childStruts]"
       }
     }
+  }
+  
+  def writeResults(results: Iterator[String], outputFile: String) {
+    val writer = new PrintWriter(new File(outputFile))
+    writer.write(results.mkString("\n"))
+    writer.close() 
   }
   
   def merge(iterators: List[Iterator[Regex.Match]] ): Iterator[Regex.Match] = new Iterator[Regex.Match] {
@@ -123,13 +128,4 @@ package object util {
 
 }
 
-object Main {
-  
-  def main(args : Array[String]) : Unit = {
-    util.outputModifiedTrainingData(args(0), args(1))
-
-    println("done!")
-  }
-}
-  
 
