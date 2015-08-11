@@ -83,14 +83,22 @@ object PCFG {
     }
     
     def findMaxProb(lo: Int, hi: Int, nt: String) : Tuple3[Double, Int, Pair[String]] = {
+      def bind(prev: Option[Double], f: Double => Option[Double]): Option[Double] = {
+        prev match {
+          case Some(d) => f(d)
+          case None    => None
+        }
+      }
       val candidates = for {
         s <- lo until hi
         (n, v) <- BinaryRuleIndexes(nt)
         val rule = (nt, n, v)
-        val p = getRuleProb(rule) + 
-                pi(lo)(s).getOrElse(n, EPSILON) + 
-                pi(s + 1)(hi).getOrElse(v, EPSILON)
-      } yield (p, s, (n, v))
+        val ruleProb = getRuleProb(rule)
+        val p = for {
+          np <- pi(lo)(s).get(n)
+          vp <- pi(s + 1)(hi).get(v)
+        } yield np + vp + ruleProb
+      } yield (p.getOrElse(EPSILON), s, (n, v))
       candidates.maxBy(_._1)
     }
     
